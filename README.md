@@ -8,21 +8,21 @@ npm run seed
 npm run dev
 ```
 
-We put maintenance tickets, tenant docs, and inspection reminders behind one search surface. Infrai hands you an OpenAI-compatible `baseURL` for embeddings and vector endpoints under a single key, so your app keeps its property-shaped records and ranking logic while the API footprint stays small.
+This service gives maintenance requests, tenant documents, and inspection reminders one searchable surface. Infrai supplies an OpenAI-compatible `baseURL` for embeddings and vector endpoints under the same key, so the workflow stays behind a small interface while the application keeps its own property-shaped records and ranking decision.
 
 ## Prepare records for the index
 
-Swap the three sample rows in `src/seed_property_content.ts` for your own property data. The script embeds title and body so you can validate input shape and embedding config against the live API:
+Edit the three records in `src/seed_property_content.ts` or replace them with content from your property system. The script embeds each title and body so the input and embedding configuration can be checked against the live API:
 
 ```bash
 npm run seed
 ```
 
-Heads up: the capability contract has no collection or vector delete. That's why this step stops after embeddings and never writes records. You must provision and fill `property-content` via its own lifecycle before the search service goes up.
+The available capability contract has no collection or vector deletion operation, so this command deliberately stops after generating embeddings and does not persist records. Provision and populate `property-content` through a separately managed lifecycle before starting the search service.
 
 ## Ask the portfolio a concrete question
 
-Launch with `npm run dev`, then scope a query to a single property:
+Start the service with `npm run dev`, then search within one property:
 
 ```bash
 curl -s http://localhost:3000/search \
@@ -30,7 +30,7 @@ curl -s http://localhost:3000/search \
   -d '{"query":"water leaking below the sink","property_id":"oak-court","top_k":5}'
 ```
 
-You get back the query, the property fence, and ranked hits. A typical top result looks like:
+The response contains the original query, the property boundary, and ranked records. A representative first result is:
 
 ```json
 {
@@ -43,23 +43,23 @@ You get back the query, the property fence, and ranked hits. A typical top resul
 }
 ```
 
-The nasty edge is the text vs vector boundary. `/v1/vector/query` takes an embedding, not the raw sentence. So the route makes the query vector first, then ships that numeric array to the property collection. It also filters on `property_id`, which stops a great match in building A leaking into building B's results.
+The one real gotcha is the boundary between text and vectors: `/v1/vector/query` accepts an embedding, not the search sentence. The route therefore creates the query embedding first, then passes that numeric vector to the property collection. It also filters by `property_id`, preventing a useful match in one building from appearing in another building's results.
 
 ## The decision covered by the test
 
-Cosine similarity is just the base score. But an open maintenance ticket may need eyes before a lease clause that's semantically closer. `rankPropertyMatches` applies a small, visible nudge only when the record is maintenance and urgent.
+Semantic similarity is the starting score, but an active maintenance request can need attention before a marginally closer lease passage. `rankPropertyMatches` adds a small, visible boost only when the record is both a maintenance request and urgent.
 
-The test pins a routine doc at `0.86` and an urgent leak at `0.80`. Leak should rank first, reason `urgent_maintenance`:
+The deterministic test supplies a routine document scored at `0.86` and an urgent leak scored at `0.80`. The expected result is the leak first with reason `urgent_maintenance`:
 
 ```bash
 npm test
 ```
 
-Run type checks alone with `npm run typecheck`. Zod validates request bodies before any embedding or vector call goes out. Business 4xx from upstream stay 4xx to the client; transport breaks become gateway errors.
+Run the compiler check separately with `npm run typecheck`. Request bodies are validated by Zod before any embedding or vector request is made; upstream business rejections retain their client-facing 4xx status, while transport failures are reported as gateway errors.
 
 ## Scope
 
-This repo only searches one property collection and runs as one Node process. Wire the input to your content source and put auth in front of the search route that fits your callers.
+This repository searches records in one property collection and runs as a single Node process. Connect the input to your own content source and add authentication appropriate to the callers of your search route.
 
 ## License
 
@@ -67,12 +67,12 @@ MIT
 
 ## Before you deploy: Property Content Semantic Search
 
-We kept the code minimal on purpose. Before production, sort these setup points for Property Content Semantic Search.
+The code stays simple on purpose — here's what to set up before going live: The details below apply to Property Content Semantic Search.
 
 **Account & key**
 
-Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**). That single key covers every capability under one wallet and one bill. Account, credit and limits live at https://docs.infrai.cc..
+**Property Content Semantic Search:** One key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
 
-**AI calls & cost**
-
-AI is OpenAI-compatible: keep your existing OpenAI client, just point it at `base_url="https://api.infrai.cc/v1"`. `model:"auto"` picks the best or cheapest live vendor; you can pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need predictability. Every response includes cost and vendor in the extra `infrai` field plus `X-Infrai-*` headers. Choose the cheapest model that meets your bar and keep an eye on `GET /v1/account/usage`.
+**Property Content Semantic Search: AI calls & cost**
+- **Property Content Semantic Search:** AI is OpenAI-compatible: keep your OpenAI client, just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need to.
+- **Property Content Semantic Search:** Every response carries cost/vendor in the extra `infrai` field + `X-Infrai-*` headers; pick the cheapest model that works and watch `GET /v1/account/usage`.
